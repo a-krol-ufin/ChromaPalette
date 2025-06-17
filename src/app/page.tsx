@@ -97,6 +97,116 @@ export default function Home() {
     );
   };
 
+  // Function to export palette in different formats
+  const exportPalette = (format: string) => {
+    const currentColors = colors.map((c) => c.value);
+
+    switch (format) {
+      case "json":
+        exportAsJSON(currentColors);
+        break;
+      case "css":
+        exportAsCSS(currentColors);
+        break;
+      case "image":
+        exportAsImage(currentColors);
+        break;
+      default:
+        console.log("Unknown export format:", format);
+    }
+  };
+
+  // Export as JSON
+  const exportAsJSON = (colors: string[]) => {
+    const paletteData = {
+      name: `Color Palette ${new Date().toISOString().split("T")[0]}`,
+      colors: colors,
+      format: colorFormat,
+      createdAt: new Date().toISOString(),
+    };
+
+    const dataStr = JSON.stringify(paletteData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `color-palette-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Export as CSS
+  const exportAsCSS = (colors: string[]) => {
+    let cssContent = ":root {\n";
+    colors.forEach((color, index) => {
+      cssContent += `  --color-${index + 1}: ${color};\n`;
+    });
+    cssContent += "}\n\n";
+
+    cssContent += "/* Color classes */\n";
+    colors.forEach((color, index) => {
+      cssContent += `.bg-color-${index + 1} { background-color: var(--color-${index + 1}); }\n`;
+      cssContent += `.text-color-${index + 1} { color: var(--color-${index + 1}); }\n`;
+    });
+
+    const dataBlob = new Blob([cssContent], { type: "text/css" });
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `color-palette-${Date.now()}.css`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Export as Image
+  const exportAsImage = (colors: string[]) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) return;
+
+    // Set canvas dimensions
+    canvas.width = 800;
+    canvas.height = 200;
+
+    // Draw color swatches
+    const swatchWidth = canvas.width / colors.length;
+    colors.forEach((color, index) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(index * swatchWidth, 0, swatchWidth, canvas.height - 40);
+
+      // Add color text
+      ctx.fillStyle = "#000000";
+      ctx.font = "14px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        color,
+        index * swatchWidth + swatchWidth / 2,
+        canvas.height - 20,
+      );
+    });
+
+    // Convert to blob and download
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `color-palette-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  };
+
   if (!showApp) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/30">
@@ -453,7 +563,7 @@ export default function Home() {
             onFormatChange={(format) => setColorFormat(format as ColorFormat)}
             onSavePalette={savePalette}
             onExportPalette={(format) => {
-              console.log(`Exporting as ${format}`);
+              exportPalette(format);
             }}
           />
 
@@ -473,7 +583,8 @@ export default function Home() {
                 deletePalette(paletteIndex);
               }}
               onExport={(palette) => {
-                console.log("Exporting palette:", palette);
+                const paletteColors = palette.colors;
+                exportAsJSON(paletteColors);
               }}
             />
           )}
