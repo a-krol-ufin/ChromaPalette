@@ -27,6 +27,13 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
   onColorChange = () => {},
   onCopy = () => {},
 }) => {
+  const handleColorInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!locked) {
+      onColorChange(e.target.value);
+    }
+  };
   // Format the color code based on the selected format
   const getFormattedColor = () => {
     if (format === "hex") return color;
@@ -80,7 +87,7 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
         className="h-48 w-full relative rounded-t-2xl"
         style={{ backgroundColor: color }}
       >
-        <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -88,7 +95,11 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
                   variant="secondary"
                   size="icon"
                   className="bg-background/80 backdrop-blur-md hover:bg-background/90 border border-border/50 shadow-sm h-8 w-8"
-                  onClick={onLockToggle}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onLockToggle();
+                  }}
                 >
                   {locked ? (
                     <Lock className="h-3.5 w-3.5" />
@@ -103,13 +114,15 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
             </Tooltip>
           </TooltipProvider>
         </div>
-        {!locked && (
-          <input
-            type="color"
-            value={color}
-            onChange={(e) => onColorChange(e.target.value)}
-            className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
-          />
+        <input
+          type="color"
+          value={color}
+          onChange={handleColorInputChange}
+          disabled={locked}
+          className={`absolute inset-0 w-full h-full opacity-0 ${locked ? "cursor-not-allowed pointer-events-none" : "cursor-pointer"}`}
+        />
+        {locked && (
+          <div className="absolute inset-0 w-full h-full bg-transparent cursor-not-allowed pointer-events-auto" />
         )}
       </div>
       <div className="p-5 flex justify-between items-center bg-card/50 backdrop-blur-sm">
@@ -141,27 +154,45 @@ const ColorSwatch: React.FC<ColorSwatchProps> = ({
 interface ColorPaletteProps {
   colors?: string[];
   format?: "hex" | "rgb" | "hsl";
+  lockedColors?: boolean[];
   onColorChange?: (index: number, newColor: string) => void;
-  onGenerateNew?: () => void;
+  onGenerateNew?: (lockedColors: boolean[]) => void;
+  onLockToggle?: (index: number, locked: boolean) => void;
 }
 
 const ColorPalette: React.FC<ColorPaletteProps> = ({
   colors = ["#F9ED69", "#F08A5D", "#B83B5E", "#6A2C70", "#08D9D6"],
   format = "hex",
+  lockedColors: externalLockedColors,
   onColorChange = () => {},
   onGenerateNew = () => {},
+  onLockToggle = () => {},
 }) => {
-  const [lockedColors, setLockedColors] = useState<boolean[]>(
+  const [internalLockedColors, setInternalLockedColors] = useState<boolean[]>(
     Array(colors.length).fill(false),
   );
 
+  const lockedColors = externalLockedColors || internalLockedColors;
+
   const handleLockToggle = (index: number) => {
-    const newLockedColors = [...lockedColors];
-    newLockedColors[index] = !newLockedColors[index];
-    setLockedColors(newLockedColors);
+    const newLocked = !lockedColors[index];
+
+    if (externalLockedColors) {
+      // If using external state, notify parent
+      onLockToggle(index, newLocked);
+    } else {
+      // If using internal state, update locally
+      const newLockedColors = [...lockedColors];
+      newLockedColors[index] = newLocked;
+      setInternalLockedColors(newLockedColors);
+    }
   };
 
   const handleColorChange = (index: number, newColor: string) => {
+    // Prevent color change if the color is locked
+    if (lockedColors[index]) {
+      return;
+    }
     onColorChange(index, newColor);
   };
 
@@ -230,7 +261,7 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
         </div>
         <Button
           variant="default"
-          onClick={onGenerateNew}
+          onClick={() => onGenerateNew(lockedColors)}
           className="flex items-center gap-2 px-6 py-2.5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 bg-gradient-to-r from-primary to-primary/90"
         >
           <RefreshCw className="h-4 w-4" />

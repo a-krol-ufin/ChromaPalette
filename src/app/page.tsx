@@ -439,8 +439,10 @@ export default function Home() {
           <ColorPalette
             colors={colors.map((c) => c.value)}
             format={colorFormat}
+            lockedColors={colors.map((c) => c.locked)}
             onColorChange={updateColor}
             onGenerateNew={generateNewPalette}
+            onLockToggle={toggleLock}
           />
 
           <PaletteControls
