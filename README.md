@@ -1,4 +1,5 @@
 # Color Palette Generator
+![image](https://github.com/user-attachments/assets/4525456c-7f71-4fc0-825b-fc4a1a48e30e)
 
 A sleek, minimalist web application that generates harmonious color palettes for UI design projects with an intuitive interface.
 
@@ -10,6 +11,7 @@ A sleek, minimalist web application that generates harmonious color palettes for
 - **Save & Export**: Save favorite palettes and export in multiple formats (JSON, CSS, Image)
 - **Responsive Design**: Clean, elegant UI with ample white space and subtle animations
 - **Lock Colors**: Lock specific colors to prevent them from changing during regeneration
+![image](https://github.com/user-attachments/assets/1f4e45a4-42f7-469b-b823-a4c73e740175)
 
 ## Tech Stack
 
